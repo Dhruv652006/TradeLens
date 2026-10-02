@@ -5,7 +5,7 @@ require("dotenv").config();
 
 const app = express();
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -297,12 +297,48 @@ async function startServer() {
     SERVER START
     ======================================================
     */
+app.get("/api/stocks/search", async (req, res) => {
+  try {
+    const query = req.query.q?.trim();
 
-    app.listen(PORT, () => {
-      console.log(
-        `Backend running on http://localhost:${PORT}`
-      );
+    if (!query) {
+      return res.json({
+        success: true,
+        results: [],
+      });
+    }
+
+    const result = await yahooFinance.search(query, {
+      quotesCount: 10,
+      newsCount: 0,
     });
+
+    const results = (result.quotes || []).map((item) => ({
+      symbol: item.symbol,
+      name: item.longname || item.shortname || item.symbol,
+      exchange: item.exchDisp || item.exchange || "",
+      type: item.quoteType || item.typeDisp || "",
+    }));
+
+    res.json({
+      success: true,
+      results,
+    });
+  } catch (error) {
+    console.error("Search API error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to search stocks",
+      error: error.message,
+    });
+  }
+});
+    const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Backend running on http://0.0.0.0:${PORT}`);
+});
   } catch (error) {
     console.error("Server startup error:");
     console.error(error);
